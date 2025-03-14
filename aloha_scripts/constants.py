@@ -1,9 +1,9 @@
 TASK_CONFIGS = {
-    'example_tasks': { # for local debug
+    'multi-task': { # for local debug
         'dataset_dir': [
-            "/media/rl/HDD/data/data/aloha_data/4_cameras_aloha/folding_shirt"
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/cobot/groceries4types_cobot_VLA"
         ],
-        'episode_len': 1000,  
+        'episode_len': 400,  
         'camera_names': ['cam_high', 'cam_left_wrist', 'cam_right_wrist'] # replacing with your real keys in h5py formatted data
     }
 }

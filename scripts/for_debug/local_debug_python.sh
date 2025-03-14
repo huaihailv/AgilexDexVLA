@@ -4,17 +4,18 @@ LLM_MODEL_SIZE=2B
 
 ACTION_HEAD=scale_dp_policy  # unet_diffusion_policy or scale_dp_policy
 
-MNOP=/media/rl/HDD/data/multi_head_train_results/aloha_qwen2_vla/qwen2_vl_2B/qwen2_vl_4_cameras_1_17_all_data_pretrain_4w_DiT_H_1_17_full_param_stage_1_50_raw_lang/checkpoint-60000
-MNOP=/media/rl/HDD/data/weights/Qwen2-VL-2B-Instruct
-TASKNAME=example_tasks
+DIT_PRETRAIN=/mnt/hpfs/baaiei/lvhuaihai/model/scaledp_l/open_scale_dp_l_backbone.ckpt
+MNOP=/mnt/hpfs/baaiei/lvhuaihai/model/qwenvla2_2b # official qwen2_vl weights
+TASKNAME=multi-task
 
-OUTPUT=/home/rl/Downloads/output/test
+OUTPUT=/mnt/hpfs/baaiei/lvhuaihai/DexVLA/qwen2_lora
+touch $OUTPUT/log.txt
 
 python ./train_vla.py \
   --use_reasoning False \
   --lora_enable True \
   --action_dim 14 \
-  --state_dim 14 \
+  --state_dim 12 \
   --flash_attn False \
   --chunk_size 50 \
   --lora_module "vit llm" \

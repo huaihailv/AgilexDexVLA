@@ -457,6 +457,8 @@ class ScaleDP(PreTrainedModel):
         else:
             global_cond = global_cond.squeeze(1)
         global_cond = torch.cat([global_cond, states], dim=-1) if states is not None else global_cond
+        # import pdb
+        # pdb.set_trace()
         global_cond = self.combine(global_cond)
 
         if not torch.is_tensor(t):

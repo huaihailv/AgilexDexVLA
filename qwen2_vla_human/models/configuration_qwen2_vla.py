@@ -26,7 +26,7 @@ logger = logging.get_logger(__name__)
 
 
 # config for VLA vision part
-class Qwen2VLAVisionConfig(PretrainedConfig):
+class Qwen2VLAHVisionConfig(PretrainedConfig):
     model_type = "qwen2_vla"
 
     def __init__(
@@ -74,7 +74,7 @@ class Qwen2VLAVisionConfig(PretrainedConfig):
         return cls.from_dict(config_dict, **kwargs)
 
 # DexVLA config which is modified from Qwen2_VL
-class Qwen2VLAConfig(PretrainedConfig):
+class Qwen2VLAHConfig(PretrainedConfig):
     r"""
     This is the configuration class to store the configuration of a [`Qwen2VLModel`]. It is used to instantiate a
     Qwen2-VL model according to the specified arguments, defining the model architecture. Instantiating a configuration
@@ -209,9 +209,9 @@ class Qwen2VLAConfig(PretrainedConfig):
         **kwargs,
     ):
         if isinstance(vision_config, dict):
-            self.vision_config = Qwen2VLAVisionConfig(**vision_config)
+            self.vision_config = Qwen2VLAHVisionConfig(**vision_config)
         elif vision_config is None:
-            self.vision_config = Qwen2VLAVisionConfig()
+            self.vision_config = Qwen2VLAHVisionConfig()
 
         self.vocab_size = vocab_size
         self.max_position_embeddings = max_position_embeddings
@@ -250,4 +250,4 @@ class Qwen2VLAConfig(PretrainedConfig):
         super().__init__(tie_word_embeddings=tie_word_embeddings, **kwargs)
 
 from transformers import AutoConfig
-AutoConfig.register("qwenvla2", Qwen2VLAConfig)
+AutoConfig.register("qwenvla2", Qwen2VLAHConfig)

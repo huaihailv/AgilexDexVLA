@@ -153,6 +153,7 @@ OUTPUT/
 data/
 checkpoints/
 loglog/
+qwen2_lora/
 
 # Pyre type checker
 .pyre/

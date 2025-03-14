@@ -49,7 +49,7 @@ from transformers.utils import (
     logging,
     replace_return_docstrings,
 )
-from .configuration_qwen2_vla import Qwen2VLAConfig, Qwen2VLAVisionConfig
+from .configuration_qwen2_vla import Qwen2VLAHConfig, Qwen2VLAHVisionConfig
 from transformers import AutoConfig, AutoModel
 import gc
 
@@ -115,7 +115,7 @@ class Qwen2VLRotaryEmbedding(nn.Module):
         device=None,
         scaling_factor=1.0,
         rope_type="default",
-        config: Optional[Qwen2VLAConfig] = None,
+        config: Optional[Qwen2VLAHConfig] = None,
     ):
         super().__init__()
         self.rope_kwargs = {}
@@ -491,7 +491,7 @@ class Qwen2VLAttention(nn.Module):
     and "Generating Long Sequences with Sparse Transformers".
     """
 
-    def __init__(self, config: Qwen2VLAConfig, layer_idx: Optional[int] = None):
+    def __init__(self, config: Qwen2VLAHConfig, layer_idx: Optional[int] = None):
         super().__init__()
         self.config = config
         self.layer_idx = layer_idx
@@ -873,7 +873,7 @@ QWEN2_VL_ATTENTION_CLASSES = {
 
 
 class Qwen2VLDecoderLayer(nn.Module):
-    def __init__(self, config: Qwen2VLAConfig, layer_idx: int):
+    def __init__(self, config: Qwen2VLAHConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
 
@@ -978,7 +978,7 @@ QWEN2VL_START_DOCSTRING = r"""
     QWEN2VL_START_DOCSTRING,
 )
 class Qwen2VLPreTrainedModel(PreTrainedModel):
-    config_class = Qwen2VLAConfig
+    config_class = Qwen2VLAHConfig
     base_model_prefix = "model"
     supports_gradient_checkpointing = True
     _no_split_modules = ["Qwen2VLDecoderLayer", "Qwen2VLVisionBlock", "policy_head"]
@@ -1001,7 +1001,7 @@ class Qwen2VLPreTrainedModel(PreTrainedModel):
 
 
 class Qwen2VisionTransformerPretrainedModel(Qwen2VLPreTrainedModel):
-    config_class = Qwen2VLAVisionConfig
+    config_class = Qwen2VLAHVisionConfig
     _no_split_modules = ["Qwen2VLVisionBlock"]
 
     def __init__(self, config) -> None:
@@ -1080,7 +1080,7 @@ class Qwen2VisionTransformerPretrainedModel(Qwen2VLPreTrainedModel):
     QWEN2VL_START_DOCSTRING,
 )
 class Qwen2VLModel(Qwen2VLPreTrainedModel):
-    def __init__(self, config: Qwen2VLAConfig):
+    def __init__(self, config: Qwen2VLAHConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
@@ -1302,7 +1302,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
         device: torch.device,
         cache_position: torch.Tensor,
         batch_size: int,
-        config: Qwen2VLAConfig,
+        config: Qwen2VLAHConfig,
         past_key_values: Cache,
     ):
         """
@@ -2059,4 +2059,4 @@ class Qwen2VLForConditionalGenerationForVLA(Qwen2VLPreTrainedModel, GenerationMi
         return action, "tinyvla no output"
 
 from transformers import AutoModelForCausalLM
-AutoModelForCausalLM.register(Qwen2VLAConfig, Qwen2VLForConditionalGenerationForVLA)
+AutoModelForCausalLM.register(Qwen2VLAHConfig, Qwen2VLForConditionalGenerationForVLA)

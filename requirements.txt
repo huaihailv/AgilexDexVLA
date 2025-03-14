@@ -195,7 +195,7 @@ timm==0.9.10
 tokenizers==0.20.1
 toolz==0.12.1
 torch==2.4.1
-torchvision==0.15.2
+torchvision
 tqdm==4.66.5
 traitlets==5.14.3
 transformers==4.45.2

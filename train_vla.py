@@ -196,17 +196,18 @@ def parse_param():
         ))
 
     config = AutoConfig.from_pretrained(model_args.model_name_or_path, **asdict(action_head_args))
+    
     # initialize diffusion action head
     if action_head_args.policy_head_type == 'scale_dp_policy': # scaledp, using dit block
         config.policy_head_size = action_head_args.policy_head_size
-        config.policy_head_config = AutoConfig.for_model(model_type=config.policy_head_type,
+        config.policy_head_config = AutoConfig.for_model(model_type=action_head_args.policy_head_type,
                                                        model_size=action_head_args.policy_head_size,
                                                        cond_dim=config.hidden_size, action_dim=action_head_args.action_dim,
                                                          prediction_horizon=data_args.chunk_size,
                                                        state_dim=action_head_args.state_dim,
                                                          is_tinyvla=model_args.is_tinyvla)
     elif action_head_args.policy_head_type == 'unet_diffusion_policy': # unet
-        config.policy_head_config = AutoConfig.for_model(model_type=config.policy_head_type,
+        config.policy_head_config = AutoConfig.for_model(model_type=action_head_args.policy_head_type,
                                                        global_cond_dim=config.hidden_size, action_dim=action_head_args.action_dim,
                                                        state_dim=action_head_args.state_dim,
                                                          is_tinyvla=model_args.is_tinyvla)
