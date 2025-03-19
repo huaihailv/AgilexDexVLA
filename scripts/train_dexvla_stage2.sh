@@ -8,10 +8,10 @@ DIT_PRETRAIN=/mnt/hpfs/baaiei/lvhuaihai/model/scaledp_l/open_scale_dp_l_backbone
 MNOP=/mnt/hpfs/baaiei/lvhuaihai/model/qwenvla2_2b # official qwen2_vl weights
 TASKNAME=multi-task
 
-OUTPUT=/mnt/hpfs/baaiei/lvhuaihai/DexVLA/qwen2_lora
+OUTPUT=/mnt/hpfs/baaiei/lvhuaihai/DexVLA/qwen2_test
 touch $OUTPUT/log.log
 
-deepspeed --master_port 29604 --num_gpus=8 --num_nodes=1 ./train_vla.py \
+deepspeed --hostfile=scripts/hostfile.txt --master_port 29604 --num_gpus=8 --num_nodes=2 ./train_vla.py \
   --deepspeed scripts/zero2.json \
   --use_reasoning False \
   --lora_enable True \
@@ -37,8 +37,8 @@ deepspeed --master_port 29604 --num_gpus=8 --num_nodes=1 ./train_vla.py \
   --bf16 True \
   --output_dir $OUTPUT \
   --max_steps 100000 \
-  --per_device_train_batch_size 4 \
-  --gradient_accumulation_steps 1 \
+  --per_device_train_batch_size 3 \
+  --gradient_accumulation_steps 3 \
   --save_strategy "steps" \
   --save_steps 10000 \
   --save_total_limit 50 \

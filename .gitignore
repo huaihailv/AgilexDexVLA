@@ -154,6 +154,7 @@ data/
 checkpoints/
 loglog/
 qwen2_lora/
+qwen2_test/
 
 # Pyre type checker
 .pyre/

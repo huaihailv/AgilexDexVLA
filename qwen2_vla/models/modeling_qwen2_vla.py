@@ -1740,9 +1740,13 @@ class Qwen2VLForConditionalGenerationForVLA(Qwen2VLPreTrainedModel, GenerationMi
         if inputs_embeds is None:
             # import pdb
             # pdb.set_trace()
+            self.model = self.model.to(input_ids.device)
+            # print(f"input_ids device: {input_ids.device}") 
+            # print(f"model_embed device: {self.model.embed_tokens.device}") 
             inputs_embeds = self.model.embed_tokens(input_ids)
             if pixel_values is not None:
                 pixel_values = pixel_values.type(self.visual.get_dtype())
+                self.visual = self.visual.to(pixel_values.device)
                 image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw)
                 n_image_tokens = (input_ids == self.config.image_token_id).sum().item()
                 n_image_features = image_embeds.shape[0]
@@ -1796,6 +1800,7 @@ class Qwen2VLForConditionalGenerationForVLA(Qwen2VLPreTrainedModel, GenerationMi
         if tinyvla: # dex-vla supports tinyvla-style VLA
             return hidden_states
 
+        self.lm_head = self.lm_head.to(hidden_states.device)
         logits = self.lm_head(hidden_states)
         logits = logits.float()
 

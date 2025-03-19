@@ -7,6 +7,12 @@ from data_utils.utils import set_seed
 from policy_heads import *
 from qwen2_vla.utils.image_processing_qwen2_vla import *
 
+from dora import Node
+import cv2
+import pyarrow as pa
+import os
+from pathlib import Path
+device = torch.device("cuda")
 
 def pre_process(robot_state_value, key, stats):
     tmp = robot_state_value
@@ -55,6 +61,8 @@ class qwen2_vla_policy:
 
         self.config = AutoConfig.from_pretrained('/'.join(model_path.split('/')[:-1]), trust_remote_code=True)
     def datastruct_droid2qwen2vla(self, raw_lang):
+        
+        
         messages = [
             {
                 "role": "user",
@@ -145,81 +153,165 @@ def eval_bc(policy, deploy_env, policy_config, raw_lang=None):
     max_timesteps = int(1000 * 10)  # may increase for real-world tasks
 
     for rollout_id in range(1000):
-
+        
         rollout_id += 0
 
         image_list = []  # for visualization
 
         with torch.inference_mode():
             time0 = time.time()
-            for t in range(max_timesteps):
+            
+            node = Node()
+    frames = {}
+    joints = {}
+    t = 0
+    
+    with torch.no_grad():
+        
+        for event in node:
+            event_type = event['type']
 
-                obs,states = deploy_env.get_obs()
+            if event_type == "INPUT":
 
-                ### 5. Realize the function of get_obs###################
-                traj_rgb_np, robot_state = process_obs(obs, states, stats)
-                #########################################################
+                event_id = event['id']
 
-                image_list.append(traj_rgb_np)
+                if "image" in event_id:
+                    storage = event["value"]
+                    metadata = event["metadata"]
+                    encoding = metadata["encoding"]
 
-                robot_state = torch.from_numpy(robot_state).float().cuda()
+                    if encoding == "bgr8":
+                        channels = 3
+                        storage_type = np.uint8
+                    elif encoding == "rgb8":
+                        channels = 3
+                        storage_type = np.uint8
+                    elif encoding in ["jpeg", "jpg", "jpe", "bmp", "webp", "png"]:
+                        channels = 3
+                        storage_type = np.uint8
+                    else:
+                        raise RuntimeError(f"Unsupported image encoding: {encoding}")           
 
-                if t % query_frequency == 0:
-                    ### 6. Augment the images##############################################################################################
-                    curr_image = torch.from_numpy(traj_rgb_np).float().cuda()
-                    if rand_crop_resize:
-                        print('rand crop resize is used!')
-                        original_size = curr_image.shape[-2:]
-                        ratio = 0.95
-                        curr_image = curr_image[...,
-                                     int(original_size[0] * (1 - ratio) / 2): int(original_size[0] * (1 + ratio) / 2),
-                                     int(original_size[1] * (1 - ratio) / 2): int(original_size[1] * (1 + ratio) / 2)]
-                        curr_image = curr_image.squeeze(0)
-                        resize_transform = transforms.Resize(original_size, antialias=True)
-                        curr_image = resize_transform(curr_image)
-                        curr_image = curr_image.unsqueeze(0)
-                    #######################################################################################################################
+                    if encoding == "bgr8":
+                        width = metadata["width"]
+                        height = metadata["height"]
+                        frame = (
+                            storage.to_numpy()
+                            .astype(storage_type)
+                            .reshape((height, width, channels))
+                        )
+                        frame = frame[:, :, ::-1]  # OpenCV image (BGR to RGB)
+                    elif encoding == "rgb8":
+                        width = metadata["width"]
+                        height = metadata["height"]
+                        frame = (
+                            storage.to_numpy()
+                            .astype(storage_type)
+                            .reshape((height, width, channels))
+                        )
+                    elif encoding in ["jpeg", "jpg", "jpe", "bmp", "webp", "png"]:
+                        storage = storage.to_numpy()
+                        frame = cv2.imdecode(storage, cv2.IMREAD_COLOR)
+                        cv2.imwrite(f"/home/agilex/Desktop/{event_id}.jpg", frame)
+                        frame = frame[:, :, ::-1]  # OpenCV image (BGR to RGB)
+                    else:
+                        raise RuntimeError(f"Unsupported image encoding: {encoding}")
+                    frames[event_id] = frame
+                elif "jointstate" in event_id:
+                    joints[event_id] = event["value"].to_numpy()
 
-                if t == 0:
-                    # warm up
-                    for _ in range(2):
+                elif "tick" == event_id:
+                    ## Wait for all images
+                    if len(frames.keys()) < 3:
+                        continue
+                    if len(joints.keys()) < 2:
+                        continue
+                    
+                    qpos = torch.from_numpy(np.concatenate([joints['jointstate_left'], joints['jointstate_right']], axis = -1))
+                    
+
+                    obs = {
+                        'left_wrist': frames["image_right"],
+                        'right_wrist': frames["image_left"],
+                        'top': frames["image_center"],
+                    }
+                    states = qpos.unsqueeze(0).to(device)
+
+                    # obs, states = deploy_env.get_obs()
+
+                    ### 5. Realize the function of get_obs###################
+                    traj_rgb_np, robot_state = process_obs(obs, states, stats)
+                    #########################################################
+
+                    image_list.append(traj_rgb_np)
+
+                    robot_state = torch.from_numpy(robot_state).float().cuda()
+
+                    if t % query_frequency == 0:
+                        ### 6. Augment the images##############################################################################################
+                        curr_image = torch.from_numpy(traj_rgb_np).float().cuda()
+                        if rand_crop_resize:
+                            print('rand crop resize is used!')
+                            original_size = curr_image.shape[-2:]
+                            ratio = 0.95
+                            curr_image = curr_image[...,
+                                        int(original_size[0] * (1 - ratio) / 2): int(original_size[0] * (1 + ratio) / 2),
+                                        int(original_size[1] * (1 - ratio) / 2): int(original_size[1] * (1 + ratio) / 2)]
+                            curr_image = curr_image.squeeze(0)
+                            resize_transform = transforms.Resize(original_size, antialias=True)
+                            curr_image = resize_transform(curr_image)
+                            curr_image = curr_image.unsqueeze(0)
+                        #######################################################################################################################
+
+                    if t == 0:
+                        # warm up
+                        for _ in range(2):
+                            batch = policy.process_batch_to_qwen2_vla(curr_image, robot_state, raw_lang)
+                            if policy_config['tinyvla']:
+                                policy.policy.evaluate_tinyvla(**batch, is_eval=True, tokenizer=policy.tokenizer)
+                            else:
+                                all_actions, outputs = policy.policy.evaluate(**batch, is_eval=True, tokenizer=policy.tokenizer)
+                                print("*" * 50)
+                                print(outputs)
+                        print('network warm up done')
+                        time1 = time.time()
+
+                    if t % query_frequency == 0:
+                        ###7. Process inputs and predict actions############################################################################################
                         batch = policy.process_batch_to_qwen2_vla(curr_image, robot_state, raw_lang)
                         if policy_config['tinyvla']:
-                            policy.policy.evaluate_tinyvla(**batch, is_eval=True, tokenizer=policy.tokenizer)
+                            all_actions, outputs = policy.policy.evaluate_tinyvla(**batch, is_eval=True, tokenizer=policy.tokenizer)
                         else:
                             all_actions, outputs = policy.policy.evaluate(**batch, is_eval=True, tokenizer=policy.tokenizer)
-                            print("*" * 50)
-                            print(outputs)
-                    print('network warm up done')
-                    time1 = time.time()
+                        ####################################################################################################################################
 
-                if t % query_frequency == 0:
-                    ###7. Process inputs and predict actions############################################################################################
-                    batch = policy.process_batch_to_qwen2_vla(curr_image, robot_state, raw_lang)
-                    if policy_config['tinyvla']:
-                        all_actions, outputs = policy.policy.evaluate_tinyvla(**batch, is_eval=True, tokenizer=policy.tokenizer)
+                        action_queue.extend(
+                                torch.chunk(all_actions, chunks=all_actions.shape[1], dim=1)[0:num_queries])
+                        raw_action = action_queue.popleft()
+
                     else:
-                        all_actions, outputs = policy.policy.evaluate(**batch, is_eval=True, tokenizer=policy.tokenizer)
-                    ####################################################################################################################################
+                        raw_action = action_queue.popleft()
 
-                    action_queue.extend(
-                            torch.chunk(all_actions, chunks=all_actions.shape[1], dim=1)[0:num_queries])
-                    raw_action = action_queue.popleft()
-
-                else:
-                    raw_action = action_queue.popleft()
-
-                raw_action = raw_action.squeeze(0).cpu().to(dtype=torch.float32).numpy()
-                ### 8. post process actions##########################################################
-                action = post_process(raw_action)
-                #####################################################################################
-                print(f"after post_process action size: {action.shape}")
-                print(f'step {t}, pred action: {outputs}{action}')
-                if len(action.shape) == 2:
-                    action = action[0]
-                ##### Execute ######################################################################
-                action_info = deploy_env.step(action.tolist())
-                ####################################################################################
+                    raw_action = raw_action.squeeze(0).cpu().to(dtype=torch.float32).numpy()
+                    ### 8. post process actions##########################################################
+                    action = post_process(raw_action)
+                    #####################################################################################
+                    print(f"after post_process action size: {action.shape}")
+                    print(f'step {t}, pred action: {outputs}{action}')
+                    if len(action.shape) == 2:
+                        action = action[0]
+                    ##### Execute ######################################################################
+                    # action_info = deploy_env.step(action.tolist())
+                    for i in range(action.shape[0]):
+                        left_action = action[i,:7]
+                        right_action = action[i,7:]
+                        
+                        node.send_output("left_action", pa.array(left_action.ravel()))
+                        node.send_output("right_action", pa.array(right_action.ravel()))
+                        
+                        time.sleep(0.05)
+                    t += 1
+                    ####################################################################################
 
 class FakeRobotEnv():
     """Fake robot environment used for testing model evaluation, please replace this to your real environment."""
@@ -240,6 +332,8 @@ class FakeRobotEnv():
             'top': img,
         }
         states = np.zeros(14)
+        
+        
         return obs, states
 
 
@@ -270,5 +364,3 @@ if __name__ == '__main__':
 
 
     eval_bc(policy, agilex_bot, policy_config, raw_lang=raw_lang)
-
-

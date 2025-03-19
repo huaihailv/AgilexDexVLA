@@ -343,6 +343,11 @@ def main(all_config=None, model_config=None):
                                                                   policy_class=all_config['action_head_args'].policy_head_type,
                                                                   sample_weights=sample_weights, train_ratio=train_ratio, llava_pythia_process=vla_process)
 
+    output_dir = all_config['training_args'].output_dir
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        rank0_print(f"{GREEN}Created output directory: {output_dir}{RESET}")
+
     # exit(0)
     stats_path = os.path.join(all_config['training_args'].output_dir, f'dataset_stats.pkl')
     with open(stats_path, 'wb') as f:
