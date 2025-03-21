@@ -37,7 +37,7 @@ deepspeed --hostfile=scripts/hostfile.txt --master_port 29604 --num_gpus=8 --num
   --bf16 True \
   --output_dir $OUTPUT \
   --max_steps 100000 \
-  --per_device_train_batch_size 3 \
+  --per_device_train_batch_size 4 \
   --gradient_accumulation_steps 3 \
   --save_strategy "steps" \
   --save_steps 10000 \

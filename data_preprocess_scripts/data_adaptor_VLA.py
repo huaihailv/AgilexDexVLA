@@ -206,7 +206,7 @@ class Adaptor:
                     episode_files.append(file_path)
         return episode_files
     
-    def rdt2ego(self, ego_data_path:str, rdt_data_path:str="/mnt/hpfs/baaiei/lvhuaihai/agilex_data/cobot/data_groceries4types_cobot"):
+    def rdt2ego(self, ego_data_path:str, rdt_data_path:str="/mnt/hpfs/baaiei/lvhuaihai/agilex_data/cobot/2025.03.18.17.32"):
         # get filename of all episode
         files_list = self.find_episode_files(rdt_data_path)
 
@@ -229,6 +229,7 @@ class Adaptor:
                 ego_group.attrs["num_samples"] = 400
                 ego_group.close()
                 rdt_data.close()
+        
 
 
         # mask_group = ego_data.create_group("mask")
@@ -267,7 +268,7 @@ class Adaptor:
 if __name__ == "__main__":
     adaptor = Adaptor()
     action_chunk = 50
-    adaptor.rdt2ego(f"/mnt/hpfs/baaiei/lvhuaihai/agilex_data/cobot/groceries4types_cobot_VLA")
+    adaptor.rdt2ego(f"/mnt/hpfs/baaiei/lvhuaihai/agilex_data/vla_cobot/groceries_agliex_white_longbread_cobot_VLA")
     # 路径名字：demo name; pairs number; action chunk; fixed length of each demo;
     # num_samples = fixed length of each demo
     # self.resample_to_100_frames修改参数为fixed length of each demo
