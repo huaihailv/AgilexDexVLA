@@ -1,9 +1,17 @@
 TASK_CONFIGS = {
     'multi-task': { # for local debug
         'dataset_dir': [
-            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/vla_cobot/groceries4types_cobot_VLA",
-            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/vla_cobot/pourdrinks_cobot_VLA",
-            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/vla_cobot/pourpick4types_cobot_VLA"
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/groceries_agliex_brown_orangeandEYP",
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/groceries_agliex_brown_peachandbread",
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/groceries_agliex_white_orangeandEYP",
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/groceries_agliex_white_peachandbread",
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/grocries_agliex_brown_EYP",
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/grocries_agliex_brown_longbread",
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/grocries_agliex_brown_orange",
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/grocries_agliex_brown_peach",
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/grocries_agliex_white_EYP",
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/grocries_agliex_white_orange",
+            "/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/grocries_agliex_white_peach"
         ],
         'episode_len': 400,  
         'camera_names': ['cam_high', 'cam_left_wrist', 'cam_right_wrist'] # replacing with your real keys in h5py formatted data

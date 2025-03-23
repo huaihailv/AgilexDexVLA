@@ -8,14 +8,14 @@ DIT_PRETRAIN=/mnt/hpfs/baaiei/lvhuaihai/model/scaledp_l/open_scale_dp_l_backbone
 MNOP=/mnt/hpfs/baaiei/lvhuaihai/model/qwenvla2_2b # official qwen2_vl weights
 TASKNAME=multi-task
 
-OUTPUT=/mnt/hpfs/baaiei/lvhuaihai/DexVLA/reverse_groceries_3nodes
+OUTPUT=/mnt/hpfs/baaiei/lvhuaihai/DexVLA/reverse_groceries_full
 mkdir $OUTPUT
 touch $OUTPUT/log.log
 
-deepspeed --hostfile=scripts/hostfile.txt --master_port 29604 --num_gpus=8 --num_nodes=3 ./train_vla.py \
+deepspeed --master_port 29604 --num_gpus=8 --num_nodes=1 ./train_vla.py \
   --deepspeed scripts/zero2.json \
   --use_reasoning False \
-  --lora_enable True \
+  --lora_enable False \
   --action_dim 14 \
   --state_dim 12 \
   --flash_attn False \
@@ -30,8 +30,8 @@ deepspeed --hostfile=scripts/hostfile.txt --master_port 29604 --num_gpus=8 --num
   --model_name_or_path $MNOP \
   --version v0 \
   --tune_mm_mlp_adapter True \
-  --freeze_vision_tower True \
-  --freeze_backbone True \
+  --freeze_vision_tower False \
+  --freeze_backbone False \
   --mm_use_im_start_end False \
   --mm_use_im_patch_token False \
   --image_aspect_ratio pad \

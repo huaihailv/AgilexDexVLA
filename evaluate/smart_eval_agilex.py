@@ -1,3 +1,11 @@
+import os,sys
+# 获取当前脚本所在的目录
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 获取 DexVLA 根目录
+dexvla_root = os.path.abspath(os.path.join(current_dir, ".."))
+# 将 DexVLA 根目录添加到 sys.path
+if dexvla_root not in sys.path:
+    sys.path.append(dexvla_root)
 from qwen2_vla.model_load_utils import load_model_for_eval
 from torchvision import transforms
 import pickle
@@ -19,14 +27,14 @@ import yaml
 from collections import deque
 
 import numpy as np
-import rospy
+# import rospy
 import torch
-from cv_bridge import CvBridge
-from geometry_msgs.msg import Twist
-from nav_msgs.msg import Odometry
-from PIL import Image as PImage
-from sensor_msgs.msg import Image, JointState
-from std_msgs.msg import Header
+# from cv_bridge import CvBridge
+# from geometry_msgs.msg import Twist
+# from nav_msgs.msg import Odometry
+# from PIL import Image as PImage
+# from sensor_msgs.msg import Image, JointState
+# from std_msgs.msg import Header
 
 device = torch.device("cuda")
 
@@ -591,7 +599,6 @@ def eval_bc(policy, policy_config, raw_lang=None):
 
     # rdt base arg
     args = get_arguments()
-    ros_operator = RosOperator(args)
     if args.seed is not None:
         set_seed(args.seed)
     config = get_config(args)
@@ -620,7 +627,9 @@ def eval_bc(policy, policy_config, raw_lang=None):
     action_queue = deque(maxlen=num_queries)
 
     max_timesteps = int(1000 * 10)  # may increase for real-world tasks
-
+    import pdb; pdb.set_trace()
+    # ros_operator = RosOperator(args)
+    
     for rollout_id in range(1000):
         
         rollout_id += 0
@@ -630,6 +639,7 @@ def eval_bc(policy, policy_config, raw_lang=None):
         with torch.inference_mode():
             time0 = time.time()
             frames = {}
+            
             update_observation_window(args, config, ros_operator)
             frames['image_left']   = observation_window[-1]['images'][config['image_left'][0]]
             frames['image_right']  = observation_window[-1]['images'][config['image_right'][0]]
@@ -723,14 +733,15 @@ if __name__ == '__main__':
     action_head = 'scale_dp_policy'  # or 'unet_diffusion_policy'
     policy_config = {
         #### 1. Specify path to trained DexVLA(Required)#############################
-        "model_path": "root/path/to/DexVLA_qwen2_vl_stage2_folding/checkpoint-60000",
-        "model_base": None, # only use for lora finetune
+        "model_path": "/mnt/hpfs/baaiei/lvhuaihai/DexVLA/qwen2_lora/checkpoint-10000",
+        "model_base": "/mnt/hpfs/baaiei/lvhuaihai/model/qwenvla2_2b", # only use for lora finetune
         "enable_lora": True, # only use for lora finetune
         "action_head": action_head,
         "tinyvla": False,
+        "pretrain_path": "/mnt/hpfs/baaiei/lvhuaihai/DexVLA/qwen2_lora/checkpoint-10000",
     }
 
-    raw_lang ='Fold t-shirt on the table.'
+    raw_lang ='Secure the white handbag in your left hand, take the peach with your right hand, and deposit it into the white handbag.'
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>hyper parameters<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     #### 2. Load DexVLA####################

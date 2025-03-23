@@ -344,8 +344,8 @@ def load_merge_lora_weights(model_path=None, model_base=None, kwargs=None):
                                                  config=lora_cfg_pretrained, **kwargs)
 
     print('Loading additional QWen2-VLA weights expecially non-lora part(diffusion head)...')
-    if os.path.exists(os.path.join(model_path, 'non_lora_trainables.bin')):
-        non_lora_trainables = torch.load(os.path.join(model_path, 'non_lora_trainables.bin'),
+    if os.path.exists(os.path.join(root_path, 'non_lora_trainables.bin')):
+        non_lora_trainables = torch.load(os.path.join(root_path, 'non_lora_trainables.bin'),
                                          )
     else:
         # this is probably from HF Hub
@@ -396,69 +396,50 @@ def load_model_for_eval(model_path, model_base, load_8bit=False, load_4bit=False
         )
     else:
         kwargs['torch_dtype'] = torch.bfloat16
-    
-    if 'qwen2' in model_path.lower():
 
-        if 'lora' in model_path.lower() and model_base is None: # only for lora finetuning
-            warnings.warn(
-                'There is `lora` in model name but no `model_base` is provided. If you are loading a LoRA model, please provide the `model_base` argument.')
-        if 'lora' in model_path.lower() and model_base is not None: # only for lora finetuning
-            if policy_config['pretrain_path'] is not None:
-                ps = model_path.split('/')
-                if not os.path.exists(os.path.join(policy_config['pretrain_path'], 'pretrain_merge_weights')):
-                    print("merging pretrained weights.......")
-                    model, tokenizer = load_merge_lora_weights(model_path=policy_config['pretrain_path'], model_base=model_base, kwargs=kwargs)
+    if 'lora' in model_path.lower() and model_base is None: # only for lora finetuning
+        warnings.warn(
+            'There is `lora` in model name but no `model_base` is provided. If you are loading a LoRA model, please provide the `model_base` argument.')
+    if 'lora' in model_path.lower() and model_base is not None: # only for lora finetuning
+        if policy_config['pretrain_path'] is not None:
+            ps = model_path.split('/')
+            if not os.path.exists(os.path.join(policy_config['pretrain_path'], 'pretrain_merge_weights')):
+                print("merging pretrained weights.......")
+                model, tokenizer = load_merge_lora_weights(model_path=policy_config['pretrain_path'], model_base=model_base, kwargs=kwargs)
 
-                    os.makedirs(os.path.join(policy_config['pretrain_path'], 'pretrain_merge_weights'), exist_ok=True)
-                    model.save_pretrained(
-                        os.path.join(policy_config['pretrain_path'], 'pretrain_merge_weights'))
-                    tokenizer.save_pretrained(os.path.join(policy_config['pretrain_path'], 'pretrain_merge_weights'))
+                os.makedirs(os.path.join(policy_config['pretrain_path'], 'pretrain_merge_weights'), exist_ok=True)
+                model.save_pretrained(
+                    os.path.join(policy_config['pretrain_path'], 'pretrain_merge_weights'))
+                tokenizer.save_pretrained(os.path.join(policy_config['pretrain_path'], 'pretrain_merge_weights'))
 
-                print("loading pretrained weights as base model.......")
-                model, tokenizer = load_merge_lora_weights(model_path=model_path, model_base=os.path.join(policy_config['pretrain_path'], 'pretrain_merge_weights'), kwargs=kwargs)
+            print("loading pretrained weights as base model.......")
+            model, tokenizer = load_merge_lora_weights(model_path=model_path, model_base=os.path.join(policy_config['pretrain_path'], 'pretrain_merge_weights'), kwargs=kwargs)
 
-            else:
-                model, tokenizer = load_merge_lora_weights(model_path=model_path, model_base=model_base, kwargs=kwargs)
-
-
-            # model = model.to(torch.bfloat16)
-        elif model_base is not None:
-            # this may be mm projector only
-            print('Loading QWen2-VLA from base model...')
-            tokenizer = AutoTokenizer.from_pretrained(model_base, use_fast=False)
-            cfg_pretrained = AutoConfig.from_pretrained(model_path)
-            model = AutoModelForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, config=cfg_pretrained,
-                                                         **kwargs)
-
-            mm_projector_weights = torch.load(os.path.join(model_path, 'mm_projector.bin'), map_location='cpu')
-            mm_projector_weights = {k: v.to(torch.float16) for k, v in mm_projector_weights.items()}
-            model.load_state_dict(mm_projector_weights, strict=False)
         else:
-            print("load QWen2-VLA!!!")
-            config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
-            tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
-            model = AutoModelForCausalLM.from_pretrained(
-                model_path,
-                config=config,
-                use_safetensors=True,
-                **kwargs).to("cuda")
+            model, tokenizer = load_merge_lora_weights(model_path=model_path, model_base=model_base, kwargs=kwargs)
+
+
+        # model = model.to(torch.bfloat16)
+    elif model_base is not None:
+        # this may be mm projector only
+        print('Loading QWen2-VLA from base model...')
+        tokenizer = AutoTokenizer.from_pretrained(model_base, use_fast=False)
+        cfg_pretrained = AutoConfig.from_pretrained(model_path)
+        model = AutoModelForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, config=cfg_pretrained,
+                                                        **kwargs)
+
+        mm_projector_weights = torch.load(os.path.join(model_path, 'mm_projector.bin'), map_location='cpu')
+        mm_projector_weights = {k: v.to(torch.float16) for k, v in mm_projector_weights.items()}
+        model.load_state_dict(mm_projector_weights, strict=False)
     else:
-        # Load language model
-        if model_base is not None:
-            # PEFT model
-            from peft import PeftModel
-            tokenizer = AutoTokenizer.from_pretrained(model_base, use_fast=False)
-            model = AutoModelForCausalLM.from_pretrained(model_base, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True,
-                                                         device_map="auto")
-            print(f"Loading LoRA weights from {model_path}")
-            model = PeftModel.from_pretrained(model, model_path)
-            print(f"Merging weights")
-            model = model.merge_and_unload()
-            print('Convert to FP16...')
-            model.to(torch.bfloat16)
-        else:
-            tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
-            model = AutoModelForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, **kwargs)
+        print("load QWen2-VLA!!!")
+        config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            config=config,
+            use_safetensors=True,
+            **kwargs).to("cuda")
 
 
     multi_modal_processor = AutoProcessor.from_pretrained(model_path, use_fast=False)

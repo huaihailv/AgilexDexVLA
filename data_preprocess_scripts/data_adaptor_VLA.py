@@ -148,9 +148,9 @@ class Adaptor:
         ee_pose = np.zeros((data_num, 12))
 
         # create 'front_img_1' dataset with compression and chunking
-        front_img = np.zeros((data_num, 480, 640, 3))
-        right_wrist_img = np.zeros((data_num, 480, 640, 3))
-        left_wrist_img = np.zeros((data_num, 480, 640, 3))
+        front_img = np.zeros((data_num, 720, 1280, 3), dtype=np.uint8)
+        right_wrist_img = np.zeros((data_num, 480, 640, 3), dtype=np.uint8)
+        left_wrist_img = np.zeros((data_num, 480, 640, 3), dtype=np.uint8)
         
         # create joint position dataset
         joint_pos = np.zeros((data_num, 14))
@@ -206,7 +206,7 @@ class Adaptor:
                     episode_files.append(file_path)
         return episode_files
     
-    def rdt2ego(self, ego_data_path:str, rdt_data_path:str="/mnt/hpfs/baaiei/lvhuaihai/agilex_data/cobot/2025.03.18.17.32"):
+    def rdt2ego(self, ego_data_path:str, rdt_data_path:str):
         # get filename of all episode
         files_list = self.find_episode_files(rdt_data_path)
 
@@ -268,7 +268,8 @@ class Adaptor:
 if __name__ == "__main__":
     adaptor = Adaptor()
     action_chunk = 50
-    adaptor.rdt2ego(f"/mnt/hpfs/baaiei/lvhuaihai/agilex_data/vla_cobot/groceries_agliex_white_longbread_cobot_VLA")
+    adaptor.rdt2ego(ego_data_path="/mnt/hpfs/baaiei/lvhuaihai/agilex_data/reverse/grocries_agliex_white_longbread",
+                    rdt_data_path="/mnt/hpfs/baaiei/lvhuaihai/agilex_data/cobot/2025.03.21.16.51/grocries_agliex_white_longbread_3.21")
     # 路径名字：demo name; pairs number; action chunk; fixed length of each demo;
     # num_samples = fixed length of each demo
     # self.resample_to_100_frames修改参数为fixed length of each demo
